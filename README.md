@@ -19,8 +19,8 @@ graph TD
     
     %% The Thinking Loop
     Router -- "Needs Context" --> RAG[Local Vector Store]
-    Router -- "Needs Compute" --> Tool[Python Tool / Calculator]
-    Router -- "Can Answer" --> LLM[Quantized LLM (Llama-3-8B)]
+    Router -- "Needs Compute" --> Tool["Python Tool / Calculator"]
+    Router -- "Can Answer" --> LLM["Quantized LLM (Llama-3-8B)"]
     
     %% The Cycles
     RAG --> Evaluator{Context Quality?}
