@@ -13,26 +13,29 @@ This repository documents the reference architectures I research and build in my
 **Why LangGraph?** Standard chains are DAGs (Directed Acyclic Graphs). Real agents need *cycles* to reason, retry, and reflect.
 
 ```mermaid
-graph TD
-    User(User Query) --> State[Global State Management]
-    State --> Router{Router Node}
+%%{init: { 'themeVariables': { 'noteTextColor': '#000000' } }}%%
+sequenceDiagram
+    participant Dev as Developer
+    participant Gate as API Gateway (Kong/Apigee)
+    participant PII as PII Redaction Service
+    participant Model as LLM Provider
+    participant Smith as LangSmith (Observability)
+
+    Dev->>Gate: POST /v1/chat/completions
     
-    %% The Thinking Loop
-    Router -- "Needs Context" --> RAG[Local Vector Store]
-    Router -- "Needs Compute" --> Tool["Python Tool / Calculator"]
-    Router -- "Can Answer" --> LLM["Quantized LLM (Llama-3-8B)"]
+    rect rgb(255, 220, 220)
+    Note over Gate, PII: Security Layer
+    Gate->>PII: Scan Payload
+    PII-->>Gate: Redacted Prompt (Entities Masked)
+    end
     
-    %% The Cycles
-    RAG --> Evaluator{Context Quality?}
-    Tool --> Evaluator
+    Gate->>Model: Forward Safe Prompt
+    Model-->>Gate: Generation
     
-    Evaluator -- "Poor Quality" --> Refine[Query Refinement Node]
-    Refine --> Router
+    rect rgb(220, 255, 220)
+    Note over Gate, Smith: Evaluation Layer
+    Gate->>PII: Re-hydrate (Optional)
+    Gate->>Smith: Log Trace & Latency
+    end
     
-    Evaluator -- "Good Quality" --> LLM
-    
-    LLM --> Output(Final Response)
-    
-    style Router fill:#f9f,stroke:#333,stroke-width:2px
-    style LLM fill:#bbf,stroke:#333,stroke-width:2px
-    style Evaluator fill:#ff9,stroke:#333,stroke-width:2px
+    Gate-->>Dev: Final Response
