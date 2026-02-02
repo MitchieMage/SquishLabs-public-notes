@@ -13,7 +13,39 @@ This repository documents the reference architectures I research and build in my
 **Why LangGraph?** Standard chains are DAGs (Directed Acyclic Graphs). Real agents need *cycles* to reason, retry, and reflect.
 
 ```mermaid
-%%{init: { 'themeVariables': { 'noteTextColor': '#000000' } }}%%
+graph TD
+    User(User Query) --> State[Global State Management]
+    State --> Router{Router Node}
+    
+    %% The Thinking Loop
+    Router -- "Needs Context" --> RAG[Local Vector Store]
+    Router -- "Needs Compute" --> Tool["Python Tool / Calculator"]
+    Router -- "Can Answer" --> LLM["Quantized LLM (Llama-3-8B)"]
+    
+    %% The Cycles
+    RAG --> Evaluator{Context Quality?}
+    Tool --> Evaluator
+    
+    Evaluator -- "Poor Quality" --> Refine[Query Refinement Node]
+    Refine --> Router
+    
+    Evaluator -- "Good Quality" --> LLM
+    
+    LLM --> Output(Final Response)
+    
+    %% Styling to ensure readability in Dark Mode (Black Text on Colors)
+    style Router fill:#f9f,stroke:#333,stroke-width:2px,color:#000
+    style LLM fill:#bbf,stroke:#333,stroke-width:2px,color:#000
+    style Evaluator fill:#ff9,stroke:#333,stroke-width:2px,color:#000
+```
+
+## Architecture 2: "The Zero Trust" GenAI Gateway
+**Concept:** How I architected secure LLM adoption for Financial Services.
+**The Challenge:** Banks cannot send PII to an LLM provider.
+**The Solution:** An interception layer that sanitizes before the prompt hits the model, and evaluates after the generation.
+
+```mermaid
+%%{init: { 'themeVariables': { 'signalTextColor': '#000000' } }}%%
 sequenceDiagram
     participant Dev as Developer
     participant Gate as API Gateway (Kong/Apigee)
@@ -39,3 +71,4 @@ sequenceDiagram
     end
     
     Gate-->>Dev: Final Response
+```
